@@ -1,58 +1,79 @@
+function eval() {
+    // Do not use eval!!!
+    return;
+}
 
+const expressionCalculator = (str) => {
 
-function expressionCalculator(expr) {
-    return eval(expr)
+    // order of operators is important
+    const operations = {
+        '+': (a, b) => a + b,
+        '-': (a, b) => a - b,
+        '*': (a, b) => a * b,
+        '/': (a, b) => {
+            if (b === 0) {
+                throw 'TypeError: Division by zero.';
+            }
+            return (a / b);
+        }
+    }
+    const operators = Object.keys(operations);
+
+    const processExpression = (expr) => {
+        for (let operator of operators) {
+            // don't match beginning of the string and don't match one by one operators
+            let regexPattern = `(?!^)(?<!\\${operators.map(el => '\\' + el).join('|')})\\${operator}`;
+            let found = [...expr.matchAll(new RegExp(regexPattern, 'g'))];
+            let matchedOperation = found[found.length - 1];
+
+            if (matchedOperation) {
+                let x = expr.slice(0, matchedOperation.index);
+                let y = expr.slice(matchedOperation.index + 1);
+
+                return y ? operations[matchedOperation[0]](processExpression(x), processExpression(y)) : x;
+            }
+        }
+
+        return +expr;
+    }
+
+    const calculate = (str) => {
+        // remove all spaces
+        str = str.replace(/\s/g, '');
+
+        // stack for checking brackets
+        let stack = [];
+
+        for (let i = 0; i < str.length; i++) {
+            if (str[i] === ')') {
+                if (!stack.length) {
+                    throw 'ExpressionError: Brackets must be paired';
+                }
+
+                // expression in brackets, should be calculated
+                let toCalculate = str.slice(stack[stack.length - 1] + 1, i);
+
+                let calculated = processExpression(toCalculate);
+
+                // combine the whole expression again
+                str = str.slice(0, stack[stack.length - 1]) + calculated + str.slice(i + 1);
+
+                // return index back to the latest position of open bracket
+                i = stack.pop();
+
+            } else if (str[i] === '(') {
+                stack.push(i);
+            }
+        }
+        if (stack.length) {
+            throw 'ExpressionError: Brackets must be paired';
+        }
+        return processExpression(str);
+    }
+
+    return calculate(str);
 }
 
 module.exports = {
     expressionCalculator
 }
-// function expressionCalculator(expr) {
-//     s = expr.split('');
-//     let v = 0;
-//     for (let i = 0; i < s.length - 1; i++) {
-//         if (Number(s[i])) {
-//             // console.log('s[i]:'+s[i]+'s[i+1]:'+s[i+1])
-//             if (Number(s[i+1])) {
-//                 v = s[i] + s[i + 1]
-//                 s.splice(i, 2, v)
-//                 i--;
-//             }
-//         }
-//     }
-//     // for (let i = 0;i<s.length;i++){
-//     //     let start=0;
-//     //     let end=0;
-//     //     if(s[i]=='('){
-//     //         start=i
-//     //     }
-//     // }
-//     for (let i = 1; i < s.length - 1; i++)
-//     {
-//         if (s[i] == '*') {
-//             v = parseFloat(s[i - 1]) * parseFloat(s[i + 1])
-//             s.splice(i - 1, 3, v)
-//             i=i-2;
-//         } else if (s[i] == '/') {
-//             v = parseFloat(s[i - 1]) / parseFloat(s[i + 1])
-//             s.splice(i - 1, 3, v)
-//             i=i-2;
-//         }
-//     }
-//     for (let i = 1; i < s.length - 1; i++)
-//     {
-//         if (s[i] == '+') {
-//             v = parseFloat(s[i - 1]) + parseFloat(s[i + 1])
-//             s.splice(i - 1, 3, v)
-//             i=i-2;
-//         } else if (s[i] == '-') {
-//             v = parseFloat(s[i - 1]) - parseFloat(s[i + 1])
-//             s.splice(i - 1, 3, v)
-//             i=i-2;
-//         }
-//     }
-//     console.log(s)
-//     return(parseFloat(s.join('')))
-// }
-//
-// console.log(expressionCalculator('35+422*71-2+3-43'))
